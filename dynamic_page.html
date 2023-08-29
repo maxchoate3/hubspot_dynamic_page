@@ -1,0 +1,37 @@
+<!--
+    templateType: page
+    isAvailableForNewContent: true
+-->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    {% if content.html_title %}<title>{{ content.html_title }}</title>{% endif %}
+    <meta name="description" content="{{ content.meta_description }}">
+    {% if brand_settings.primaryFavicon.src %}
+      <link rel="shortcut icon" href="{{ brand_settings.primaryFavicon.src }}" />
+    {% endif %}
+    {{ standard_header_includes }}
+  </head>
+  <body>
+    
+        <!-- Set variables outside of dnd_area -->
+    {% set extracted_car_name = request.path.split('/')[-1] %}
+    {% set specific_car = hubdb_table_rows('INSERT_YOUR_TABLE_ID', 'car_model=' ~ extracted_car_name)|first %}
+        
+    <!-- Display car details -->
+    <div class="car-details">
+          <h1>Listings Available:</h1>
+        <img src="{{ specific_car.car_image.url }}" alt="{{ specific_car.car_make }} {{ specific_car.car_model }}" style="max-width: 300px; border-radius: 8px; margin-bottom: 20px;">
+        <h1>{{ specific_car.car_make }} {{ specific_car.car_model }}</h1>
+        <p><strong>Price:</strong> ${{ specific_car.car_price }}</p>
+    </div>
+    
+    {% dnd_area "dnd_area"
+      label="Main section"
+    %}
+
+    {% end_dnd_area %}
+    {{ standard_footer_includes }}
+  </body>
+</html>
