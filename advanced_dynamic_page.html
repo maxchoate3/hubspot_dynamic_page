@@ -1,0 +1,109 @@
+<!--
+    templateType: page
+    isAvailableForNewContent: true
+-->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    {% if content.html_title %}<title>{{ content.html_title }}</title>{% endif %}
+    <meta name="description" content="{{ content.meta_description }}">
+    {% if brand_settings.primaryFavicon.src %}
+      <link rel="shortcut icon" href="{{ brand_settings.primaryFavicon.src }}" />
+    {% endif %}
+    {{ standard_header_includes }}
+
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        /* Styling for the header banner */
+        .header-banner {
+            background: url('https://42528150.fs1.hubspotusercontent-na1.net/hubfs/42528150/Toyota-alternatives.png') no-repeat center center;
+            background-size: cover; /* Ensure the background image covers the full banner */
+            position: relative; /* Required to position the pseudo-element relative to the banner */
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-size: 4em;
+            margin-bottom: 50px;
+        }
+
+        .header-banner::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-color: rgba(211, 211, 211, 0.6); /* Light gray with 60% opacity */
+            z-index: 1; /* Ensure the overlay is beneath the banner text */
+        }
+
+        .header-banner > * {
+          z-index: 2; /* Ensure the banner text is above the overlay */
+        }
+      
+        /* Styling for the car details */
+        .car-details {
+            background-color: white;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 60px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .car-details:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        p {
+            font-size: 1.1em;
+            color: #666;
+        }
+    </style>
+  </head>
+  <body>
+
+    <!-- Header banner -->
+    <div class="header-banner">
+      <div class="banner-text">Toyota - Drive Your Dreams</div>
+    </div>
+
+
+    <!-- Set variables outside of dnd_area -->
+    {% set extracted_car_name = request.path.split('/')[-1] %}
+    {% set specific_car = hubdb_table_rows('INSERT_YOUR_TABLE_ID', 'car_model=' ~ extracted_car_name)|first %}
+        
+    <!-- Display car details -->
+    <div class="car-details">
+          <h1>Listings Available:</h1>
+        <img src="{{ specific_car.car_image.url }}" alt="{{ specific_car.car_make }} {{ specific_car.car_model }}" style="max-width: 300px; border-radius: 8px; margin-bottom: 20px;">
+        <h1>{{ specific_car.car_make }} {{ specific_car.car_model }}</h1>
+        <p><strong>Price:</strong> ${{ specific_car.car_price }}</p>
+    </div>
+
+    
+    {% dnd_area "dnd_area"
+      label="Main section"
+    %}
+
+    
+    {% end_dnd_area %}
+    {{ standard_footer_includes }}
+  </body>
+</html>
