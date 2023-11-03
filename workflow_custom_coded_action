@@ -1,0 +1,98 @@
+import requests
+from hubspot import HubSpot
+
+BASE_URL = "https://api.hubapi.com/"
+MAIN_TABLE_ID = "7264921"  # Replace with your main table ID
+API_KEY = "pat-na1-946f6313-ca01-49bd-b913-549b50aa4e99"  # Replace with your API key
+HEADERS = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+hubspot = HubSpot(access_token=API_KEY)
+
+
+CAR_LIST_ID_MAPPING = {
+    "highlander": "84",
+    "tundra": "85",
+    "camry": "86"
+}
+
+def fetch_data_from_table(table_id):
+    url = f"{BASE_URL}hubdb/api/v2/tables/{table_id}/rows"
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch data from table {table_id}. Response code: {response.status_code}. Response text: {response.text}")
+    return response.json()
+
+def is_user_in_list(user_id, list_id):
+    url = f"{BASE_URL}contacts/v1/lists/{list_id}/contacts/all"
+    response = requests.get(url, headers=HEADERS)
+    
+    if response.status_code != 200:
+        print(f"Failed to fetch contacts for list ID {list_id}. Response code: {response.status_code}. Response text: {response.text}")
+        return False
+
+    contacts = response.json().get('contacts', [])
+    return any(contact['vid'] == user_id for contact in contacts)
+    
+    if response.status_code != 200:
+        print(f"Failed to update property '{property_name}' for contact ID {user_id}. Response code: {response.status_code}. Response text: {response.text}")
+        
+def format_car_list(cars):
+    if not cars:
+        return ""
+    if len(cars) == 1:
+        return cars[0]
+    if len(cars) == 2:
+        return f"{cars[0]} and {cars[1]}"
+    return ", ".join(cars[:-1]) + f", and {cars[-1]}"
+
+def main(event):
+    table_data = fetch_data_from_table(MAIN_TABLE_ID)
+    print(f"Number of rows fetched: {len(table_data['objects'])}")  # Print statement 1
+
+    cars_with_price_changes = []
+    user_id = event.get('object').get('objectId')  # Assuming the user ID is the same as the object ID being processed
+
+    for row in table_data['objects']:
+        current_price = row['values']['3']
+        previous_price = row['values']['8']
+        print(f"Car: {row['values']['5']}, Current Price: {current_price}, Previous Price: {previous_price}")  # Print statement 2
+
+        if current_price != previous_price:
+            print(f"Price change detected for car: {row['values']['5']}")  # Print statement 3
+            car_model = row['values']['5'].lower()  # Convert to lowercase for consistent mapping
+            cars_with_price_changes.append(car_model)
+            
+            # Update the 'previous_price' column in HubDB
+            row['values']['8'] = current_price
+
+    print(f"Cars with price changes (before user filter): {cars_with_price_changes}")  # Print statement 4
+
+    # Let's filter cars based on the user's subscription
+    cars_user_is_subscribed_to = []
+    for car in cars_with_price_changes:
+        list_id_for_car = CAR_LIST_ID_MAPPING.get(car, None)  # Retrieve the list ID from our mapping
+        if list_id_for_car is None:
+            print(f"Warning: No list ID mapping found for car model '{car}'")
+            continue
+
+        print(f"Checking if user {user_id} is subscribed to car {car}")  # Print statement 5
+        if is_user_in_list(user_id, list_id_for_car):
+            cars_user_is_subscribed_to.append(car)
+
+    # Concatenate the cars into a single string using the format_car_list function
+    cars_string = format_car_list(cars_user_is_subscribed_to)
+
+    print(cars_string)  # Print the final cars string
+
+
+    # Return the output in the desired format
+    return {
+        'outputFields': {
+            'cars_with_price_changes': cars_string
+        }
+    }
+
